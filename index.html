@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Examen de FOL</title>
+    <style>
+        :root {
+            --primary: #0ea5e9; 
+            --primary-dark: #0284c7;
+            --success: #10b981;
+            --error: #ef4444;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text-main: #0f172a;
+            --text-sec: #64748b;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .app-container {
+            background-color: var(--card);
+            width: 100%;
+            max-width: 720px;
+            min-height: 650px;
+            margin: 20px;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background-color: #e2e8f0;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: var(--primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .header {
+            padding: 20px 40px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+        }
+
+        .counters {
+            display: flex;
+            gap: 20px;
+            font-size: 0.95rem;
+            font-weight: 700;
+        }
+
+        .counter-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            border-radius: 20px;
+        }
+
+        .c-correct { background-color: #d1fae5; color: #065f46; }
+        .c-wrong { background-color: #fee2e2; color: #991b1b; }
+
+        .content-area {
+            padding: 40px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            animation: fadeIn 0.4s ease-out;
+            overflow-y: auto;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .question-meta {
+            color: var(--primary);
+            font-size: 0.85rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+        }
+
+        .question-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+            line-height: 1.4;
+            margin-bottom: 30px;
+            color: var(--text-main);
+        }
+
+        .options-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .option-btn {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px 20px;
+            text-align: left;
+            font-size: 1rem;
+            color: var(--text-main);
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+        }
+
+        .option-letter {
+            background: #f1f5f9;
+            color: var(--text-sec);
+            font-weight: 700;
+            min-width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            border-color: var(--primary);
+            background-color: #f0f9ff;
+            transform: translateY(-2px);
+        }
+
+        .option-btn:disabled {
+            cursor: default;
+            opacity: 0.7;
+        }
+
+        .option-btn.correct {
+            border-color: var(--success);
+            background-color: #ecfdf5;
+            color: #065f46;
+        }
+        .option-btn.correct .option-letter {
+            background-color: #34d399;
+            color: white;
+        }
+
+        .option-btn.wrong {
+            border-color: var(--error);
+            background-color: #fef2f2;
+            color: #991b1b;
+        }
+        .option-btn.wrong .option-letter {
+            background-color: #f87171;
+            color: white;
+        }
+
+        .footer-controls {
+            padding: 20px 40px;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: flex-end;
+            background-color: white;
+            margin-top: auto;
+        }
+
+        .next-btn {
+            background-color: var(--text-main);
+            color: white;
+            border: none;
+            padding: 12px 32px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: none;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .next-btn:hover {
+            background-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .results-screen {
+            text-align: center;
+            display: none;
+            align-items: center;
+        }
+
+        .score-card {
+            background: white;
+            padding: 30px;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .score-circle {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            margin: 0 auto 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: conic-gradient(var(--primary) 0%, #f1f5f9 0%);
+        }
+
+        .score-circle::before {
+            content: "";
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            background: white;
+            border-radius: 50%;
+        }
+
+        .score-text {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .final-grade {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: var(--text-main);
+            line-height: 1;
+        }
+
+        .grade-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-sec);
+            margin-top: 5px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        .summary-item {
+            padding: 15px;
+            border-radius: 12px;
+            background: #f8fafc;
+        }
+
+        .summary-val {
+            font-size: 1.5rem;
+            font-weight: 800;
+            display: block;
+        }
+
+        .restart-btn {
+            background-color: var(--primary);
+            color: white;
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .restart-btn:hover {
+            background-color: var(--primary-dark);
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="progress-container">
+        <div class="progress-bar" id="progress-bar"></div>
+    </div>
+
+    <header class="header" id="header">
+        <div class="counters">
+            <div class="counter-item c-correct">
+                <span>Aciertos:</span> <span id="score-correct">0</span>
+            </div>
+            <div class="counter-item c-wrong">
+                <span>Fallos:</span> <span id="score-wrong">0</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="content-area" id="quiz-screen">
+        <span class="question-meta" id="q-number">Pregunta 1</span>
+        <h2 class="question-text" id="q-text">...</h2>
+        <div class="options-list" id="options-list"></div>
+    </div>
+
+    <div class="content-area results-screen" id="results-screen">
+        <div class="score-card">
+            <div class="score-circle" id="score-circle">
+                <div class="score-text">
+                    <span class="final-grade" id="final-grade">0.00</span>
+                    <span class="grade-label">NOTA FINAL</span>
+                </div>
+            </div>
+            
+            <p id="final-message" style="font-size: 1.2rem; font-weight: 600; margin-bottom: 20px; color: var(--text-sec);">...</p>
+
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <span class="summary-val" style="color: var(--success)" id="final-correct">0</span>
+                    <span style="font-size: 0.85rem; color: var(--text-sec)">Aciertos (+0.25)</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-val" style="color: var(--error)" id="final-wrong">0</span>
+                    <span style="font-size: 0.85rem; color: var(--text-sec)">Fallos (-0.08)</span>
+                </div>
+            </div>
+
+            <button class="restart-btn" onclick="initQuiz()">Volver a intentar</button>
+        </div>
+    </div>
+
+    <footer class="footer-controls" id="footer">
+        <button class="next-btn" id="next-btn" onclick="nextQuestion()">Siguiente &rarr;</button>
+    </footer>
+</div>
+
+<script>
+    // PREGUNTAS ACTUALIZADAS (FOL)
+    const questions = [
+        {
+            q: "¿Cómo están ordenadas las cualificaciones profesionales del Catálogo Nacional de Cualificaciones Profesionales?",
+            options: ["Se ordenan según las tablas publicadas en el BOE.", "Se ordenan por familias profesionales.", "Se ordenan alfabéticamente.", "Se ordenan por año de publicación."],
+            correct: 1
+        },
+        {
+            q: "¿Cuál de las siguientes no es una de las consecuencias positivas que puede tener un conflicto?",
+            options: ["Promueve la mejora en la comunicación.", "Define la identidad de grupo.", "Puede favorecer la innovación y la creatividad.", "Fomenta respuestas estereotipadas."],
+            correct: 3
+        },
+        {
+            q: "¿Cuál de las siguientes opciones no es un componente fundamental de la inteligencia emocional?",
+            options: ["Autosensibilidad.", "Autocontrol emocional.", "Automotivación.", "Empatía."],
+            correct: 0
+        },
+        {
+            q: "¿Cuál de las siguientes situaciones no tendrá la consideración de accidente de trabajo?",
+            options: ["Los que se sufran al ir o al volver del lugar de trabajo.", "Los sufridos durante el desempeño de cargos electivos de carácter sindical.", "Los ocurridos por consecuencia de las tareas que se realicen por orden del empresario.", "Los que sean debidos a dolo o a imprudencia temeraria."],
+            correct: 3
+        },
+        {
+            q: "¿Cuál de los siguientes no es un organismo nacional encargado de velar por la seguridad y la salud en el trabajo?",
+            options: ["Instituto Nacional de Seguridad, Salud y Bienestar en el Trabajo (INSST).", "Organización Nacional de Trabajo, Salud e Inspección Social (ONTS).", "Inspección de Trabajo y Seguridad Social (ITSS).", "Comisión Nacional de Seguridad y Salud en el Trabajo (CNSST)."],
+            correct: 1
+        },
+        {
+            q: "¿Cuáles son los tres elementos que componen el mercado laboral?",
+            options: ["La oferta, los demandantes de empleo y los intermediarios.", "Los trabajadores por cuenta propia, los trabajadores por cuenta ajena y los funcionarios.", "Las pymes, las grandes empresas y las administraciones públicas.", "La empleabilidad, la demanda empresarial y la FP."],
+            correct: 0
+        },
+        {
+            q: "¿Qué son los devengos?",
+            options: ["Las cantidades totales percibidas por el trabajador (percepciones salariales y no salariales).", "Los complementos de vencimiento periódico superior al mes (en especie o prorrateados).", "Los tipos porcentuales mediante los que se obtienen las cuotas a descontar de la nómina (en dinero o en especie).", "Los importes que convierten la remuneración salarial en no salarial."],
+            correct: 0
+        },
+        {
+            q: "Ante una situación de emergencia se debe:",
+            options: ["Mantener la calma y actuar de forma serena, pero con rapidez.", "Examinar el lugar rápidamente y comprobar si existen otros peligros.", "Intentar evitar lo que se conoce como shock.", "Todas las respuestas anteriores son correctas."],
+            correct: 3
+        },
+        {
+            q: "Aquellos agentes que, al entrar en contacto con tejidos vivos, pueden destruirlos, se denominan:",
+            options: ["Irritantes.", "Corrosivos.", "Inflamables.", "Tóxicos."],
+            correct: 1
+        },
+        {
+            q: "Con respecto a las partes del contrato de trabajo:",
+            options: ["El trabajador debe ser una persona física.", "La empresa puede ser una persona física, una persona jurídica o una comunidad de bienes.", "Con 16 o 17 años se puede firmar un contrato cuando se cuente con la autorización de los padres o se esté emancipado.", "Todas son correctas."],
+            correct: 3
+        },
+        {
+            q: "De las siguientes características, señala cuál no pertenece al conflicto:",
+            options: ["Es inherente a los grupos.", "Siempre se puede considerar como un obstáculo que impide alcanzar los objetivos.", "Si se maneja adecuadamente pueden obtenerse consecuencias positivas de él.", "Existe un predominio de las opiniones opuestas."],
+            correct: 1
+        },
+        {
+            q: "El Comité de Seguridad y Salud tendrá entre sus competencias:",
+            options: ["Participar en la elaboración, puesta en práctica y evaluación de los planes y programas de prevención de riesgos de la empresa.", "Informar al Ministerio de Trabajo de las irregularidades que cometa la empresa en materia de prevención y proponerle sanciones.", "Administrar las partidas presupuestarias destinadas a promoción de la salud y prevención de los riesgos.", "Prestar atención a los trabajadores para que las medidas de prevención no disminuyan la eficacia y operatividad del servicio."],
+            correct: 0
+        },
+        {
+            q: "El contrato indefinido ordinario:",
+            options: ["Impide despedir al trabajador, por su carácter atemporal.", "Se podrá concretar de forma escrita o verbal, a tiempo completo o parcial.", "Siempre ha de ser concertado de forma escrita y ante la autoridad laboral.", "Ha sido sustituido por los contratos fijos discontinuos."],
+            correct: 1
+        },
+        {
+            q: "El convenio colectivo:",
+            options: ["Es una de las fuentes del derecho laboral.", "Es un pacto alcanzado libremente.", "Es el reflejo de la participación efectiva de los trabajadores.", "Todas son correctas."],
+            correct: 3
+        },
+        {
+            q: "El estrés:",
+            options: ["Solo se manifiesta con síntomas psicológicos.", "Es un desequilibrio entre las exigencias percibidas y las capacidades del trabajador para hacerles frente.", "Es bueno para el trabajador si se convierte en crónico.", "Todas son correctas."],
+            correct: 1
+        },
+        {
+            q: "El objetivo o límite de salida en una negociación:",
+            options: ["Es aquel en el que se encuentra la meta máxima a conseguir.", "Es aquel en el que se encuentra la meta mínima.", "Es aquel que permite romper las negociaciones.", "Es aquel que se ubica lo más cerca posible del objetivo real."],
+            correct: 0
+        },
+        {
+            q: "El principio in dubio pro operario:",
+            options: ["Es una interpretación de la norma, indica que en caso de confusión se aplicará la norma que favorezca al empresario.", "Es una expresión proveniente del latín en la que se enaltece el trabajo duro.", "Es una interpretación de la norma, indica que en caso de confusión se aplicará la norma que favorezca al trabajador.", "Es una interpretación de la norma, indica que los trabajadores no pueden renunciar a los derechos que les otorgan las normas."],
+            correct: 2
+        },
+        {
+            q: "El Salario Mínimo Interprofesional (SMI):",
+            options: ["Es la cuantía mínima percibida por un trabajo por cuenta ajena a tiempo completo.", "No se puede mejorar por contrato salvo que lo autorice el Gobierno por ley.", "Se usa como referencia para el IPC.", "Ninguna de las anteriores es correcta."],
+            correct: 0
+        },
+        {
+            q: "El trabajador por cuenta ajena:",
+            options: ["Realiza un trabajo de forma voluntaria, personal, directa y organizado por un tercero, a cambio de un salario.", "Es aquel que realiza un trabajo de forma obligatoria e independiente, a cambio de un salario.", "Es sinónimo de emprendedor.", "Es aquel que no trabaja para una empresa, sino que se autoemplea."],
+            correct: 0
+        },
+        {
+            q: "En el CV inverso:",
+            options: ["Los datos del candidato se presentan de manera desordenada.", "Se combinan distintos tipos de currículum.", "Se muestran primero las experiencias más recientes del candidato.", "Se presentan los datos por áreas temáticas."],
+            correct: 2
+        },
+        {
+            q: "En relación con las medidas de protección:",
+            options: ["Debe primar la seguridad individual sobre la colectiva.", "Debe primar la seguridad colectiva sobre la individual.", "Se centran en el uso de señalización de seguridad.", "Son lo mismo que las técnicas de prevención."],
+            correct: 1
+        },
+        {
+            q: "En un despido disciplinario:",
+            options: ["Te deben indemnizar con 20 días de salario por año trabajado.", "Te deben indemnizar con 33 días de salario por año trabajado.", "Se cobrará indemnización solo si el empresario no preavisa con 30 días.", "No tienes derecho a indemnización."],
+            correct: 3
+        },
+        {
+            q: "La cláusula incluida en el contrato de trabajo que obliga al trabajador a trabajar exclusivamente para un empresario durante la vigencia del acuerdo se denomina:",
+            options: ["Confidencialidad.", "No competencia.", "Permanencia.", "Dedicación plena."],
+            correct: 3
+        },
+        {
+            q: "La habilidad para entender y gestionar los sentimientos propios y ajenos cuando se interactúa con otras personas se conoce como:",
+            options: ["Feedback.", "Asertividad.", "Performing.", "Inteligencia emocional."],
+            correct: 3
+        },
+        {
+            q: "La técnica de prevención de riesgos laborales cuya finalidad es prevenir las posibles enfermedades profesionales que pueden derivar de la actividad laboral, en especial por los contaminantes ambientales, se denomina:",
+            options: ["Psicología aplicada.", "Enfermería laboral.", "Ergosotomía.", "Higiene en el trabajo."],
+            correct: 3
+        },
+        {
+            q: "Las dimensiones del burnout son:",
+            options: ["El agotamiento emocional, la despersonalización y la baja realización personal.", "La manifestación general, la manifestación local y la intensidad.", "El desinterés, la agresividad y el bajo rendimiento.", "La baja atención, el aumento de los conflictos laborales y la irascibilidad."],
+            correct: 0
+        },
+        {
+            q: "Las relaciones laborales especiales:",
+            options: ["No cumplen las cinco características de las relaciones ordinarias.", "Tienen ciertas peculiaridades y están reguladas por su propia norma específica.", "Se encuentran enumeradas en el artículo 42 del EBEP.", "Todas son correctas."],
+            correct: 1
+        },
+        {
+            q: "Las vacaciones:",
+            options: ["No son un derecho constitucional.", "Sirven para dar descanso a los trabajadores.", "Pueden ser o no retribuidas.", "Pueden sustituirse por una compensación económica."],
+            correct: 1
+        },
+        {
+            q: "Los grados de incapacidad permanente son:",
+            options: ["Parcial, total, absoluta y gran invalidez.", "Crónica y total.", "Concluyente, lesiva y gran invalidez.", "Revisable, incapacitante, parcial y absoluta."],
+            correct: 0
+        },
+        {
+            q: "Los requisitos para percibir el subsidio por desempleo son:",
+            options: ["Solamente no disponer de ningún tipo de renta mensual.", "No rechazar ofertas de empleo adecuadas ni acciones formativas y carecer de rentas mensuales superiores al 75% del SMI.", "Estar en situación de desempleo, ser menor de 55 años e ingresar menos del 80 % del IPREM.", "Estar en situación de desempleo, tener alguna incapacidad y/o cargas familiares."],
+            correct: 1
+        },
+        {
+            q: "Método de resolución del conflicto en el que las partes acuden a un tercero objetivo e imparcial para que decida la solución, que será vinculante y cuyo cumplimiento podrá exigir:",
+            options: ["Conciliación.", "Negociación.", "Arbitraje.", "Confrontación."],
+            correct: 2
+        },
+        {
+            q: "Para la buena gestión de un sistema preventivo son básicos los siguientes elementos:",
+            options: ["Política de prevención, organización de la prevención, evaluación de riesgos, planificación de la actividad preventiva, ejecución y auditoría.", "Política de evaluación, política de riesgos, planificación de la actividad preventiva, subsanación y retroalimentación.", "Auditoría externa, auditoría interna, coordinación de emergencias, evaluación de las actuaciones y reorientación preventiva.", "Identificación del peligro, descripción del riesgo, determinación de la severidad de sus consecuencias, acción y temporización."],
+            correct: 0
+        },
+        {
+            q: "Para poder ser perceptor de la prestación contributiva por desempleo, no será requisito necesario:",
+            options: ["Estar en situación de búsqueda activa de empleo.", "Encontrarse en situación legal de desempleo.", "Tener cotizados al menos 360 días, en los 6 años anteriores.", "Estar inscrito en el programa de parados de larga duración."],
+            correct: 3
+        },
+        {
+            q: "Para que exista una negociación debe haber:",
+            options: ["Un equilibrio de fuerzas entre las partes.", "Capacidad de comunicación entre las partes.", "Intención de llegar a un entendimiento.", "Todas son correctas."],
+            correct: 3
+        },
+        {
+            q: "Para una correcta señalización de seguridad, indica la opción correcta en relación con la señales auditivas:",
+            options: ["Las señales auditivas las emitirá una instancia independiente a la empresa.", "Las señales auditivas pueden llegar a ser peligrosas si superan la frecuencia media de emisión.", "Las señales auditivas basadas en la comunicación verbal deben estar formadas por frases simples, claras y cortas.", "No se deben implementar señales auditivas de ningún tipo."],
+            correct: 2
+        },
+        {
+            q: "Señala la afirmación falsa acerca del derecho laboral:",
+            options: ["Ha existido desde que existe el trabajo.", "Nace en el siglo XIX derivado de los problemas de la Revolución Industrial.", "Está en continuo cambio e intenta mejorar la calidad y el bienestar en el ámbito laboral.", "Sus principios sirven para interpretar la legislación laboral y cubrir los vacíos que deje."],
+            correct: 0
+        },
+        {
+            q: "Señala la dinámica de trabajo en equipo en la que cada uno de los miembros del equipo expone con la mayor libertad sus ideas sobre un tema o problema, sin que ninguna se descarte o se critique:",
+            options: ["Forming.", "Role-Playing.", "Hate-storming.", "Tormenta de ideas."],
+            correct: 3
+        },
+        {
+            q: "Si un despido es declarado nulo:",
+            options: ["No ocurre nada, se mantiene despedido.", "Se recibe una indemnización de 45 días por año trabajado y una restitución formal.", "Queda anulado y se obliga a la readmisión del trabajador en la empresa y al pago de los salarios de tramitación.", "Se anula el contrato de trabajo y se impide el acceso del trabajador a la empresa."],
+            correct: 2
+        },
+        {
+            q: "Sobre el descanso semanal:",
+            options: ["Los trabajadores tendrán derecho a un día y medio ininterrumpido.", "Se podrá acumular en períodos de un máximo 30 días.", "Los menores de edad deberán disfrutar de tres días de descanso semanal.", "Todas son correctas."],
+            correct: 0
+        },
+        {
+            q: "Tanto el empresario como los trabajadores tienen una responsabilidad:",
+            options: ["Administrativa, civil y penal.", "Directa, indirecta y asociada.", "Criminal, procesal y judicial.", "Laboral, administrativa y social."],
+            correct: 0
+        }
+    ];
+
+    let currentIdx = 0;
+    let scoreCorrect = 0;
+    let scoreWrong = 0;
+
+    const ui = {
+        progressBar: document.getElementById('progress-bar'),
+        scoreCorrect: document.getElementById('score-correct'),
+        scoreWrong: document.getElementById('score-wrong'),
+        qNumber: document.getElementById('q-number'),
+        qText: document.getElementById('q-text'),
+        optionsList: document.getElementById('options-list'),
+        nextBtn: document.getElementById('next-btn'),
+        quizScreen: document.getElementById('quiz-screen'),
+        resultsScreen: document.getElementById('results-screen'),
+        header: document.getElementById('header'),
+        footer: document.getElementById('footer'),
+        finalGrade: document.getElementById('final-grade'),
+        scoreCircle: document.getElementById('score-circle'),
+        finalCorrect: document.getElementById('final-correct'),
+        finalWrong: document.getElementById('final-wrong'),
+        finalMessage: document.getElementById('final-message')
+    };
+
+    function initQuiz() {
+        currentIdx = 0;
+        scoreCorrect = 0;
+        scoreWrong = 0;
+        
+        ui.resultsScreen.style.display = 'none';
+        ui.quizScreen.style.display = 'flex';
+        ui.header.style.display = 'flex';
+        ui.footer.style.display = 'flex';
+        
+        updateStats();
+        loadQuestion();
+    }
+
+    function updateStats() {
+        ui.scoreCorrect.innerText = scoreCorrect;
+        ui.scoreWrong.innerText = scoreWrong;
+        const progress = ((currentIdx) / questions.length) * 100;
+        ui.progressBar.style.width = `${progress}%`;
+    }
+
+    function loadQuestion() {
+        ui.quizScreen.style.animation = 'none';
+        ui.quizScreen.offsetHeight; 
+        ui.quizScreen.style.animation = 'fadeIn 0.4s ease-out';
+
+        const q = questions[currentIdx];
+        ui.qNumber.innerText = `PREGUNTA ${currentIdx + 1} DE ${questions.length}`;
+        ui.qText.innerText = q.q;
+        ui.optionsList.innerHTML = '';
+        ui.nextBtn.style.display = 'none';
+
+        const letters = ['A', 'B', 'C', 'D'];
+
+        q.options.forEach((opt, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            
+            const letter = document.createElement('div');
+            letter.className = 'option-letter';
+            letter.innerText = letters[index] || '';
+            
+            const text = document.createElement('div');
+            text.innerText = opt;
+
+            btn.appendChild(letter);
+            btn.appendChild(text);
+            
+            btn.onclick = () => handleAnswer(index, btn);
+            ui.optionsList.appendChild(btn);
+        });
+
+        ui.quizScreen.scrollTop = 0;
+        updateStats();
+    }
+
+    function handleAnswer(selectedIndex, btn) {
+        if (ui.nextBtn.style.display === 'block') return;
+
+        const q = questions[currentIdx];
+        const buttons = ui.optionsList.querySelectorAll('.option-btn');
+        
+        buttons.forEach(b => b.disabled = true);
+
+        if (selectedIndex === q.correct) {
+            btn.classList.add('correct');
+            scoreCorrect++;
+        } else {
+            btn.classList.add('wrong');
+            if(buttons[q.correct]) {
+                buttons[q.correct].classList.add('correct');
+            }
+            scoreWrong++;
+        }
+
+        updateStats();
+        ui.nextBtn.style.display = 'block';
+        
+        if (window.innerWidth < 768) {
+            ui.nextBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+
+    function nextQuestion() {
+        currentIdx++;
+        if (currentIdx < questions.length) {
+            loadQuestion();
+        } else {
+            showResults();
+        }
+    }
+
+    function showResults() {
+        ui.quizScreen.style.display = 'none';
+        ui.header.style.display = 'none';
+        ui.footer.style.display = 'none';
+        ui.progressBar.style.width = '100%';
+        ui.resultsScreen.style.display = 'flex';
+
+        let rawScore = (scoreCorrect * 0.25) - (scoreWrong * 0.08);
+        if (rawScore < 0) rawScore = 0;
+
+        let gradeOutOf10 = rawScore; // 40 * 0.25 = 10
+        
+        ui.finalGrade.innerText = gradeOutOf10.toFixed(2);
+        ui.finalCorrect.innerText = scoreCorrect;
+        ui.finalWrong.innerText = scoreWrong;
+
+        const percentage = (gradeOutOf10 / 10) * 100;
+        const color = gradeOutOf10 >= 5 ? 'var(--success)' : 'var(--error)';
+        
+        ui.scoreCircle.style.background = `conic-gradient(${color} ${percentage}%, #f1f5f9 0%)`;
+        ui.finalGrade.style.color = color;
+
+        if (gradeOutOf10 >= 9) ui.finalMessage.innerText = "¡Excelente Trabajo! 🏆";
+        else if (gradeOutOf10 >= 7) ui.finalMessage.innerText = "¡Muy Buen Resultado! 💪";
+        else if (gradeOutOf10 >= 5) ui.finalMessage.innerText = "Aprobado 👍";
+        else ui.finalMessage.innerText = "Necesitas Repasar 📚";
+    }
+
+    initQuiz();
+</script>
+
+</body>
+</html>
